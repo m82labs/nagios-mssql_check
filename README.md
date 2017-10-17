@@ -8,7 +8,7 @@ A simple Nagios plugin to execute arbitrary SQL scripts against an instance.
 
 - Support for SQLCMD style variable substitutions
 - Support for "timing" mode to measure duration for any query (useful for canary style queries)
-- Support for all standard plugin feayures:
+- Support for all standard plugin features:
   - Service Status
   - Detailed Service Status
   - Optional Performance Data
