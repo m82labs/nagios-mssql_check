@@ -87,7 +87,7 @@ func main() {
 	}
 
 	// Read three result sets
-	// Servier Status
+	// Server Status
 	var service_status string
 	var current_hr string
 
@@ -106,7 +106,7 @@ func main() {
 			service_status = fmt.Sprintf("Response Time: %dms", dur)
 			service_status += fmt.Sprintf("|es=1,instance_latency_ms=%d", dur)
 			for rows.Next() {
-				// Do nothing here
+				// Do nothing here, can this be done in a better way?
 			}
 		} else {
 			var metric string
@@ -123,7 +123,7 @@ func main() {
 			}
 		}
 	} else {
-		fmt.Println("No performance data found.")
+		fmt.Println("No performance data found. At a minimum, you should include \"SELECT 'None','None'\" in your SQL script.")
 		os.Exit(3)
 	}
 
