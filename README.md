@@ -79,3 +79,13 @@ In this snippet we might want to check a table for events that occurred since th
 ```
 -a "last_check:$LASTSERVICECHECK$"
 ```
+
+## Installation
+To install:
+
+1. Install Go
+1. Set your $GOPATH
+1. `go get -d github.com/m82labs/nagios-mssql_check`
+1. `cd $GOPATH/src/github.com/m82labs/nagios-mssql_check`
+1. `go build -o mssql_check`
+1. Copy the resulting executable into you Nagios `libexec` directory.
