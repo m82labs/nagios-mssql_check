@@ -94,6 +94,9 @@ func main() {
         os.Exit(0)
 	}
 
+
+    // TODO: Loop through the result sets and check the column names. Based on those, set the appropriate variables
+
 	// Read three result sets
 	// Server Status
 	for rows.Next() {
