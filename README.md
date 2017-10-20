@@ -44,21 +44,21 @@ This will pass the name of the SQL script to execute as `$ARG1$` and `-a "last_c
 In order to use a SQL script file with this plugin, it must return three result sets:
 
 1. Service status, human readable data: The first row will be included in outgoing alerts and be displayed on summary screen in Nagios. Any additional rows in the first result set will be displayed when viewing the details of a specific service check.
-1. Performance data: For some checks you may want to include performance data of some kind that will be written to an external system or used to generate graphs. This result set should be in the form of `Key,Value`, each row being a separate key/value pair. If you are not going to return performance data, simply add `SELECT 'Key',NULL AS [Value]` as the second query in your script.
+1. Performance data: For some checks you may want to include performance data of some kind that will be written to an external system or used to generate graphs. This result set should be in the form of `Key,Value`, each row being a separate key/value pair. If you are not going to return performance data, simply add `SELECT NULL AS metric,NULL AS [value]` as the second query in your script.
 1. Exit code: Returns a single integer representing the service status (0 - OK, 1 - Warning, 2 - Critical, 3 - Unknown)
 
 ### Simple Example
 ```
 // Service Status
-SELECT TOP (1) name AS HR  FROM sys.databases
+SELECT TOP (1) name AS status  FROM sys.databases
 UNION ALL
-SELECT name AS HR FROM sys.databases
+SELECT name AS status FROM sys.databases
 
 // Performance Data
-SELECT 'Metric' AS Metric, 10 AS Value
+SELECT 'Metric' AS metric, 10 AS value
 
 // Exit Code
-SELECT 0 AS exit_code
+SELECT 0 AS exitcode
 ```
 
 ### Variables
