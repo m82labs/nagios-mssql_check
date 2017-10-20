@@ -96,6 +96,15 @@ func main() {
 
 
     // TODO: Loop through the result sets and check the column names. Based on those, set the appropriate variables
+    for rows.Next() {
+        cols, _ := rows.Columns()
+        //num_cols := cap(cols)
+        for _, col := range cols {
+            fmt.Println(col)
+        }
+
+    }
+
 
 	// Read three result sets
 	// Server Status
