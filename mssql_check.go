@@ -81,16 +81,21 @@ func main() {
 	}
 	defer rows.Close()
 
-	// Calculate total time
+	var service_status string
+	var current_hr string
+	var exitcode int = 3 //default to UNKNOWN
+    
+    // Calculate total time and set variables
 	if *get_timing {
 		dur = time.Since(start).Nanoseconds() / 1000000
+		service_status = fmt.Sprintf("Response Time: %dms", dur)
+		service_status += fmt.Sprintf("|instance_latency_ms=%d", dur)
+        fmt.Println(service_status)
+        os.Exit(0)
 	}
 
 	// Read three result sets
 	// Server Status
-	var service_status string
-	var current_hr string
-
 	for rows.Next() {
 		err = rows.Scan(&current_hr)
 		if err != nil {
@@ -102,43 +107,32 @@ func main() {
 
 	// Performance data
 	if rows.NextResultSet() {
-		if *get_timing {
-			service_status = fmt.Sprintf("Response Time: %dms", dur)
-			service_status += fmt.Sprintf("|es=1,instance_latency_ms=%d", dur)
-			for rows.Next() {
-				// Do nothing here, can this be done in a better way?
+		// Assume we are getting a string/float pair
+        var metric sql.NullString
+		var value sql.NullString
+		service_status += "|"
+		for rows.Next() {
+			err = rows.Scan(&metric, &value)
+			if err != nil {
+				fmt.Println("Failed to gather performance data: ", err)
+				os.Exit(3)
 			}
-		} else {
-			var metric string
-			var value int64
-			service_status += "|"
-			for rows.Next() {
-				err = rows.Scan(&metric, &value)
-				if err != nil {
-					fmt.Println("Failed to gather performance data: ", err)
-					os.Exit(3)
-				}
-				service_status += fmt.Sprintf("%s=%d", metric, value)
-
-			}
+            if metric.Valid && value.Valid {
+    			service_status += fmt.Sprintf("%s=%s", metric.Value, value.Value)
+            }
 		}
 	} else {
-		fmt.Println("No performance data found. At a minimum, you should include \"SELECT 'None','None'\" in your SQL script.")
+		fmt.Println("No performance data found. At a minimum, you should include \"SELECT NULL,NULL'\" in your SQL script.")
 		os.Exit(3)
 	}
 
 	// Exit Code
-	var exitcode int = 3 //default to UNKNOWN
 	if rows.NextResultSet() {
-		if *get_timing {
-			exitcode = 0
-		} else {
-			for rows.Next() {
-				err = rows.Scan(&exitcode)
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
+		for rows.Next() {
+			err = rows.Scan(&exitcode)
+			if err != nil {
+				fmt.Println(err)
+				continue
 			}
 		}
 	} else {
