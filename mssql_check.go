@@ -159,6 +159,9 @@ func main() {
 	}
 
 	// Output service status information
+	if service_status == "" {
+		service_status = "No service status returned. Make sure the query is returning a result set with a 'ServiceStatus' field."
+	}
 	fmt.Println(service_status)
 
 	// Exit with the exit code
