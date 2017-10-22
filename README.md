@@ -43,16 +43,16 @@ This will pass the name of the SQL script to execute as `$ARG1$` and `-a "last_c
 ## SQL Scripts
 In order to use a SQL script file with this plugin, it must return three result sets:
 
-1. Service status, human readable data: The first row will be included in outgoing alerts and be displayed on summary screen in Nagios. Any additional rows in the first result set will be displayed when viewing the details of a specific service check.
-1. Performance data: For some checks you may want to include performance data of some kind that will be written to an external system or used to generate graphs. This result set should be in the form of `Key,Value`, each row being a separate key/value pair. If you are not going to return performance data, simply add `SELECT NULL AS metric,NULL AS [value]` as the second query in your script.
-1. Exit code: Returns a single integer representing the service status (0 - OK, 1 - Warning, 2 - Critical, 3 - Unknown)
+1. Service status, human readable data: The first row will be included in outgoing alerts and be displayed on summary screen in Nagios. Any additional rows in the first result set will be displayed when viewing the details of a specific service check. The service status should only have a single field named `ServiceStatus`.
+1. Performance data (optional): For some checks you may want to include performance data of some kind that will be written to an external system or used to generate graphs. This result set must have the fields `metric` and `value`, each row being a separate key/value pair of performance data. NOTE: It is up to you to format this data properly for processing.
+1. Exit code: Returns a single integer representing the service status (0 - OK, 1 - Warning, 2 - Critical, 3 - Unknown). This field should be named `exitcode`.
 
 ### Simple Example
 ```
 // Service Status
-SELECT TOP (1) name AS status  FROM sys.databases
+SELECT TOP (1) name AS servicestatus  FROM sys.databases
 UNION ALL
-SELECT name AS status FROM sys.databases
+SELECT name FROM sys.databases
 
 // Performance Data
 SELECT 'Metric' AS metric, 10 AS value
@@ -89,3 +89,4 @@ To install:
 1. `cd $GOPATH/src/github.com/m82labs/nagios-mssql_check`
 1. `go build -o mssql_check`
 1. Copy the resulting executable into you Nagios `libexec` directory.
+1. Configure Nagios to use the plugin
