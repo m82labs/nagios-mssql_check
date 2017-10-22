@@ -32,12 +32,15 @@ func main() {
 	} else {
 		dsn = "server=" + *server + ";user id=" + *userid + ";password=" + *password + ";database=" + *database
 	}
+
+	// Open a connection
 	db, err := sql.Open("mssql", dsn)
 	if err != nil {
 		fmt.Println("Cannot connect: ", err.Error())
 		os.Exit(3)
 	}
 
+	// Test Connection
 	err = db.Ping()
 	if err != nil {
 		fmt.Println("Cannot connect: ", err.Error())
@@ -54,6 +57,7 @@ func main() {
 
 	cmd := string(script)
 
+	// Parse SQLCMD variables
 	if *argument != "" {
 		for _, arg := range strings.Split(*argument, ",") {
 			currarg := strings.Split(arg, ":")
@@ -84,72 +88,74 @@ func main() {
 	var service_status string
 	var current_hr string
 	var exitcode int = 3 //default to UNKNOWN
-    
-    // Calculate total time and set variables
+
+	// Calculate total time and set variables
 	if *get_timing {
 		dur = time.Since(start).Nanoseconds() / 1000000
 		service_status = fmt.Sprintf("Response Time: %dms", dur)
 		service_status += fmt.Sprintf("|instance_latency_ms=%d", dur)
-        fmt.Println(service_status)
-        os.Exit(0)
+		fmt.Println(service_status)
+		os.Exit(0)
 	}
 
+	var get_results = true
 
-    // TODO: Loop through the result sets and check the column names. Based on those, set the appropriate variables
-    for rows.Next() {
-        cols, _ := rows.Columns()
-        //num_cols := cap(cols)
-        for _, col := range cols {
-            fmt.Println(col)
-        }
+	for get_results {
+		cols, _ := rows.Columns()
 
-    }
+		switch strings.ToLower(cols[0]) {
+		case "servicestatus": // Service Status
+			for rows.Next() {
+				err = rows.Scan(&current_hr)
+				if err != nil {
+					fmt.Println("Failed to parse results: ", err)
+					os.Exit(3)
+				}
+				service_status += current_hr + "\n"
+			}
+			if !rows.NextResultSet() {
+				get_results = false
+			}
+		case "metric": //Performance Data
+			if cap(cols) == 2 {
 
+				var metric sql.NullString
+				var value sql.NullString
+				service_status += "|"
 
-	// Read three result sets
-	// Server Status
-	for rows.Next() {
-		err = rows.Scan(&current_hr)
-		if err != nil {
-			fmt.Println("Failed to parse results: ", err)
-			os.Exit(3)
-		}
-		service_status += current_hr + "\n"
-	}
+				for rows.Next() {
+					err = rows.Scan(&metric, &value)
+					if err != nil {
+						fmt.Println("Failed to gather performance data: ", err)
+						os.Exit(3)
+					}
 
-	// Performance data
-	if rows.NextResultSet() {
-		// Assume we are getting a string/float pair
-        var metric sql.NullString
-		var value sql.NullString
-		service_status += "|"
-		for rows.Next() {
-			err = rows.Scan(&metric, &value)
-			if err != nil {
-				fmt.Println("Failed to gather performance data: ", err)
+					if metric.Valid && value.Valid {
+						service_status += fmt.Sprintf("%s=%s", metric.Value, value.Value)
+					}
+				}
+			} else {
+				fmt.Println("Performance data incorrectly formatted, each result must have two fields, 'metric' and 'value'.")
 				os.Exit(3)
 			}
-            if metric.Valid && value.Valid {
-    			service_status += fmt.Sprintf("%s=%s", metric.Value, value.Value)
-            }
-		}
-	} else {
-		fmt.Println("No performance data found. At a minimum, you should include \"SELECT NULL,NULL'\" in your SQL script.")
-		os.Exit(3)
-	}
-
-	// Exit Code
-	if rows.NextResultSet() {
-		for rows.Next() {
-			err = rows.Scan(&exitcode)
-			if err != nil {
-				fmt.Println(err)
-				continue
+			if !rows.NextResultSet() {
+				get_results = false
 			}
+		case "exitcode": // Exit Status
+
+			for rows.Next() {
+				err = rows.Scan(&exitcode)
+				if err != nil {
+					fmt.Println("Error getting exit code: ", err)
+					os.Exit(3)
+				}
+			}
+			if !rows.NextResultSet() {
+				get_results = false
+			}
+		default:
+			get_results = false
 		}
-	} else {
-		fmt.Println("No exit code found.")
-		os.Exit(3)
 	}
 
 	// Output service status information
