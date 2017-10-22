@@ -131,7 +131,7 @@ func main() {
 					}
 
 					if metric.Valid && value.Valid {
-						service_status += fmt.Sprintf("%s=%s", metric.Value, value.Value)
+						service_status += fmt.Sprintf("%s=%s", metric.String, value.String)
 					}
 				}
 			} else {
