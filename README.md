@@ -47,6 +47,8 @@ In order to use a SQL script file with this plugin, it must return three result 
 1. Performance data (optional): For some checks you may want to include performance data of some kind that will be written to an external system or used to generate graphs. This result set must have the fields `metric` and `value`, each row being a separate key/value pair of performance data. NOTE: It is up to you to format this data properly for processing.
 1. Exit code: Returns a single integer representing the service status (0 - OK, 1 - Warning, 2 - Critical, 3 - Unknown). This field should be named `exitcode`.
 
+Note: To generate a sample SQL script, execute `mssql_check -g`
+
 ### Simple Example
 ```
 // Service Status

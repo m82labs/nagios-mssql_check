@@ -19,11 +19,80 @@ func main() {
 		server     = flag.String("h", "localhost", "server_name[\\instance_name]")
 		database   = flag.String("d", "master", "Database name to connect to")
 		filepath   = flag.String("s", "test.sql", "File path to SQL script file")
-		argument   = flag.String("a", "", "SQLCMD-style arguments: 'Key1=Value1;Key2=Value2'")
+		argument   = flag.String("a", "", "SQLCMD-style arguments: 'Key1:Value1,Key2:Value2'")
 		integrated = flag.Bool("i", false, "Enable integrated (Windows) authentication")
 		get_timing = flag.Bool("t", false, "Returns timing data ONLY for the query executed, normal query output is omitted.")
+		generate_check = flag.Bool("g", false, "Generates a check script template you can use to create Nagios checks.")
+		sample_script = `----------------------------------------------------------------------------------
+-- Script Name: DatabaseHealthCheck.sql
+--
+-- Desc: This is a sample script that checks if any databases are in 'suspect'
+-- mode and shows the basics of using this plugin.
+--
+-- If you need to pass in any variables, use SQLCMD style syntax:
+--   '$(varname)'
+--
+-- And then use the '-a' option to pass in a value:
+--   mssql_check -s myscript.sql -a 'varname:5,varname2'
+--
+-- Auth: Mark Wilkinson
+-- Date: 2017/12/27
+--
+-- Change History
+-- ----------------
+----------------------------------------------------------------------------------
+
+USE master
+
+SET NOCOUNT ON;
+
+DECLARE 
+	@ServiceStatus VARCHAR(100) = 'Databases healthy',
+	@ReturnCode TINYINT = 0 -- 0 -OK, 1 - WARN, 2- CRITICAL, 3 - UNKNOWN
+
+BEGIN TRY
+	IF EXISTS (
+		SELECT  1
+		FROM	sys.databases
+		WHERE	state = 4
+	)
+	BEGIN
+	--== Get human readable data and set exit code
+		SET @ServiceStatus = 'Database(s) found in suspect state.';
+		SET @ReturnCode = 2;
+	END
+
+	--== Select our Service Status data
+	SELECT	@ServiceStatus AS ServiceStatus
+	UNION ALL
+	SELECT	REPLACE(REPLACE('{{db}} - {{state}}','{{db}}',name collate SQL_Latin1_General_CP1_CI_AS),'{{state}}',state_desc)
+	FROM	sys.databases
+
+	--== Metric
+	SELECT NULL AS Metric, NULL AS Value;
+	
+	--== Return
+	SELECT @ReturnCode AS ExitCode;
+	
+END TRY
+BEGIN CATCH
+	--== On error, return the error and a status of UNKNOWN to Nagios
+	--== Return Error as Human Readable Text
+	SELECT CONCAT('Error:',ERROR_MESSAGE()) AS ServiceStatus
+
+	--== Return null metrics
+	SELECT NULL AS metric, NULL AS value
+
+	--== Return UNKNOWN
+	SELECT 3 AS ExitCode
+END CATCH;`
 	)
 	flag.Parse()
+
+	if *generate_check {
+		fmt.Println(sample_script)
+		os.Exit(3)
+	}
 
 	// Connection string
 	var dsn string
@@ -64,7 +133,7 @@ func main() {
 			if cap(currarg) == 2 {
 				cmd = strings.Replace(cmd, "$("+currarg[0]+")", currarg[1], -1)
 			} else {
-				fmt.Println("Error parsing argurments. Key=Value pair not found.")
+				fmt.Println("Error parsing argurments. Key:Value pair not found.")
 				os.Exit(3)
 			}
 		}
@@ -142,7 +211,6 @@ func main() {
 				get_results = false
 			}
 		case "exitcode": // Exit Status
-
 			for rows.Next() {
 				err = rows.Scan(&exitcode)
 				if err != nil {
