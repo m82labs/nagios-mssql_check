@@ -23,7 +23,7 @@ Here is an example config that assumes the `$USER1$` macro points to your `libex
 #MSSQL Query-Based Checks
 define command{
     command_name mssql_check
-    command_line $USER1$/mssql_check -h $HOSTNAME$ -s $USER2$/$ARG1$ $ARG2$
+    command_line $USER1$/mssql_check -h $HOSTNAME$ -s $USER2$/$ARG1$ -a '$ARG2$' -U $USER3$ -P '$USER4$'
 }
 ```
 
