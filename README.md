@@ -33,7 +33,7 @@ define service {
 ...
     ; This command takes 1 argument:
     ;  - last_check (int): The timestamp from the last check in UNIX Epoch time (seconds since 01/01/1970)
-    check_command mssql_check!CriticalErrorCheck.sql!-a "last_check:$LASTSERVICECHECK$"
+    check_command mssql_check!CriticalErrorCheck.sql!last_check:$LASTSERVICECHECK$
 ...
 }
 ```
