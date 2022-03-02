@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+    "regexp"
 
 	_ "github.com/denisenkom/go-mssqldb"
 )
@@ -127,17 +128,37 @@ END CATCH;`
 	cmd := string(script)
 
 	// Parse SQLCMD variables
-	if *argument != "" {
-		for _, arg := range strings.Split(*argument, ",") {
-			currarg := strings.Split(arg, ":")
-			if cap(currarg) == 2 {
-				cmd = strings.Replace(cmd, "$("+currarg[0]+")", currarg[1], -1)
-			} else {
-				fmt.Println("Error parsing argurments. Key:Value pair not found.")
-				os.Exit(3)
-			}
-		}
-	}
+    // Get a list of replacement tokens, break into token/replacement pairs
+    pattern := regexp.MustCompile(`\$\(([a-zA-Z_]+:*\S*)\)`)
+    found := pattern.FindAllStringSubmatch(cmd, -1)
+
+    tokens := make(map[string][2]string)
+
+    for _, match := range found {
+        // Split on ':' to get default values
+        token := strings.Split(match[1], ":")
+        if len(token) > 1 {
+            tokens[token[0]] = [2]string{match[0], token[1]}
+        } else {
+            tokens[token[0]] = [2]string{match[0], ""}
+        }
+    }
+
+    // Get list of arguments
+    for _, arg := range strings.Split(argument, ",") {
+        carg := strings.Split(arg, ":")
+        if cap(carg) == 2 {
+            tokens[carg[0]] = [2]string{tokens[carg[0]][0], carg[1]}
+        } else {
+            fmt.Println("Error parsing argurments. Key:Value pair not found.")
+            os.Exit(3)
+        }
+    }
+
+    // Go through the arugments and update the tag/replacment list
+    for _, value := range tokens {
+        cmd = strings.Replace(cmd, value[0], value[1], -1)
+    }
 
 	// Capture timings
 	var start time.Time
