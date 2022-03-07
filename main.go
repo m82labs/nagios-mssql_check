@@ -145,7 +145,7 @@ END CATCH;`
     }
 
     // Get list of arguments
-    for _, arg := range strings.Split(argument, ",") {
+    for _, arg := range strings.Split(*argument, ",") {
         carg := strings.Split(arg, ":")
         if cap(carg) == 2 {
             tokens[carg[0]] = [2]string{tokens[carg[0]][0], carg[1]}
