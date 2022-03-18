@@ -156,11 +156,11 @@ END CATCH;`
                 os.Exit(3)
             }
         }
+    }
 
-        // Go through the arugments and update the tag/replacment list
-        for _, value := range tokens {
-            cmd = strings.Replace(cmd, value[0], value[1], -1)
-        }
+    // Go through the arugments and update the tag/replacment list
+    for _, value := range tokens {
+        cmd = strings.Replace(cmd, value[0], value[1], -1)
     }
 
 	// Capture timings
