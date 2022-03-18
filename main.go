@@ -144,20 +144,23 @@ END CATCH;`
         }
     }
 
-    // Get list of arguments
-    for _, arg := range strings.Split(*argument, ",") {
-        carg := strings.Split(arg, ":")
-        if cap(carg) == 2 {
-            tokens[carg[0]] = [2]string{tokens[carg[0]][0], carg[1]}
-        } else {
-            fmt.Println("Error parsing argurments. Key:Value pair not found.")
-            os.Exit(3)
+    // If arguments are passed in...
+    if len(*argument) > 0 {
+        // Get list of arguments
+        for _, arg := range strings.Split(*argument, ",") {
+            carg := strings.Split(arg, ":")
+            if cap(carg) == 2 {
+                tokens[carg[0]] = [2]string{tokens[carg[0]][0], carg[1]}
+            } else {
+                fmt.Println("Error parsing arguments. Key:Value pair not found.")
+                os.Exit(3)
+            }
         }
-    }
 
-    // Go through the arugments and update the tag/replacment list
-    for _, value := range tokens {
-        cmd = strings.Replace(cmd, value[0], value[1], -1)
+        // Go through the arugments and update the tag/replacment list
+        for _, value := range tokens {
+            cmd = strings.Replace(cmd, value[0], value[1], -1)
+        }
     }
 
 	// Capture timings
