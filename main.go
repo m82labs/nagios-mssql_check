@@ -15,8 +15,8 @@ import (
 
 func main() {
 	var (
-		userid     = flag.String("U", "sa", "User name to connect with")
-		password   = flag.String("P", "password!", "User password")
+		userid     = flag.String("U", "", "User name to connect with")
+		password   = flag.String("P", "", "User password")
 		server     = flag.String("h", "localhost", "server_name[\\instance_name]")
 		database   = flag.String("d", "master", "Database name to connect to")
 		filepath   = flag.String("s", "test.sql", "File path to SQL script file")
@@ -97,14 +97,34 @@ END CATCH;`
 
 	// Connection string
 	var dsn string
+
 	if *integrated {
 		dsn = "server=" + *server + ";database=" + *database
 	} else {
-		dsn = "server=" + *server + ";user id=" + *userid + ";password=" + *password + ";database=" + *database
+        var db_username string
+        var db_password string
+
+        db_username, u_present := os.LookupEnv("sql_username")
+        db_password, p_present := os.LookupEnv("sql_password")
+
+        if *userid != "" {
+            if *password != "" {
+                db_username = *userid
+                db_password = *password
+            } else {
+                fmt.Println("When specifying a user name you must also specify a password.")
+                os.Exit(3)
+            }
+        } else if !(u_present && p_present)  {
+            fmt.Println("Cannot find a valid auth method. Either specify a username/password via environment variables or command line flags, or use integrated authentication.")
+            os.Exit(3)
+        }
+
+		dsn = "server=" + *server + ";user id=" + db_username + ";password=" + db_password + ";database=" + *database
 	}
 
 	// Open a connection
-	db, err := sql.Open("mssql", dsn)
+	db, err := sql.Open("sqlserver", dsn)
 	if err != nil {
 		fmt.Println("Cannot connect: ", err.Error())
 		os.Exit(3)
